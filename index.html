@@ -68,10 +68,11 @@
             color: #666;
         }
         .error-log {
-            margin-top: 1rem;
-            font-size: 0.7rem;
+            margin-top: 1.5rem;
+            font-size: 0.6rem;
             color: #ff4444;
-            opacity: 0.7;
+            opacity: 0.5;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -88,43 +89,41 @@
 
     <script>
         const webapp = window.Telegram.WebApp;
-        webapp.expand();
         webapp.ready();
+        webapp.expand();
 
-        const user = webapp.initDataUnsafe.user;
         const debug = document.getElementById('debug');
+        
+        // Попытка получить пользователя разными способами
+        const user = webapp.initDataUnsafe?.user;
 
-        if (user) {
+        if (user && user.id) {
             document.getElementById('user-name').innerText = user.first_name || "Игрок";
-            document.getElementById('status').innerText = "Поиск сервера...";
+            document.getElementById('status').innerText = "Связь с базой...";
             
-            // ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ ОТ NGROK ИЛИ LOCALTUNNEL (ОБЯЗАТЕЛЬНО HTTPS)
             const API_BASE = "https://3b3f32c36c6a4a54-79-127-206-186.serveousercontent.com"; 
 
             fetch(`${API_BASE}/api/balance/${user.id}`)
-                .then(response => {
-                    if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
                     if (data.ok) {
                         document.getElementById('balance').innerHTML = `${data.balance.toFixed(2)}<span class="currency">$</span>`;
-                        document.getElementById('status').innerText = "Обновлено";
+                        document.getElementById('status').innerText = "Синхронизировано";
                         document.getElementById('status').style.color = "#00ff88";
                     } else {
-                        throw new Error(data.error || "Ошибка данных");
+                        throw new Error(data.error || "Ошибка БД");
                     }
                 })
                 .catch(err => {
-                    console.error(err);
                     document.getElementById('balance').innerText = "0.00";
                     document.getElementById('status').innerText = "Оффлайн";
-                    debug.innerText = "Подключите туннель в Termux (порт 8080)";
+                    debug.innerText = "Ошибка сервера: " + err.message;
                 });
         } else {
-            document.getElementById('user-name').innerText = "Доступ запрещен";
+            document.getElementById('user-name').innerText = "Доступ ограничен";
             document.getElementById('balance').innerText = "---";
-            document.getElementById('status').innerText = "Зайдите через бота";
+            document.getElementById('status').innerText = "Откройте через бота";
+            debug.innerText = "Тех. инфо: " + (webapp.initData ? "Данные есть, но user пуст" : "WebApp не инициализирован");
         }
     </script>
 </body>
