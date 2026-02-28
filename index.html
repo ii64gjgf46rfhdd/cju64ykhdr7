@@ -1,133 +1,58 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TetherBet Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: radial-gradient(circle at center, #2c2c2c 0%, #121212 100%);
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .container {
-            text-align: center;
-            width: 90%;
-        }
-        .balance-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 2.5rem 1.5rem;
-            border-radius: 24px;
-            backdrop-filter: blur(15px);
-            border: 1px rgba(255, 255, 255, 0.1) solid;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-        }
-        h1 {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 0.5rem;
-            color: #888;
-        }
-        .balance-value {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin: 0.5rem 0;
-            color: #fff;
-        }
-        .currency {
-            color: #00ff88;
-            font-size: 2rem;
-            margin-left: 5px;
-        }
-        .user-name {
-            font-size: 1.2rem;
-            margin-top: 1rem;
-            color: #00ff88;
-            font-weight: 500;
-        }
-        .status-tag {
-            display: inline-block;
-            margin-top: 1.5rem;
-            padding: 5px 12px;
-            border-radius: 100px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            background: rgba(255,255,255,0.1);
-            color: #666;
-        }
-        .error-log {
-            margin-top: 1.5rem;
-            font-size: 0.6rem;
-            color: #ff4444;
-            opacity: 0.5;
-            word-break: break-all;
-        }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .card { padding: 40px; border: 1px solid #333; border-radius: 20px; }
+        .bal { font-size: 3em; color: #00ff88; margin: 10px 0; }
+        button { background: #333; color: #fff; border: none; padding: 10px 20px; border-radius: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="balance-card">
-            <h1>Мой баланс</h1>
-            <div id="balance" class="balance-value">0.00<span class="currency">$</span></div>
-            <div id="user-name" class="user-name">Загрузка...</div>
-            <div id="status" class="status-tag">Инициализация...</div>
-            <div id="debug" class="error-log"></div>
-        </div>
+    <div class="card">
+        <div id="name">...</div>
+        <div id="bal" class="bal">0.00$</div>
+        <div id="info" style="font-size: 0.7em; color: #555;">v4</div>
+        <button onclick="location.reload()">ОБНОВИТЬ</button>
     </div>
 
     <script>
-        // Функция инициализации
-        function initApp() {
-            const tg = window.Telegram.WebApp;
-            const debug = document.getElementById('debug');
-            
-            tg.ready();
-            tg.expand();
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
 
-            // Проверка данных
-            const initData = tg.initData || "";
+        function load() {
             const user = tg.initDataUnsafe?.user;
-
             if (user && user.id) {
-                document.getElementById('user-name').innerText = user.first_name || "Игрок";
-                document.getElementById('status').innerText = "Подключение...";
+                document.getElementById('name').innerText = user.first_name;
                 
-                const API_BASE = "https://3b3f32c36c6a4a54-79-127-206-186.serveousercontent.com"; 
+                // ВАША ССЫЛКА НА ТУННЕЛЬ
+                const API = "https://3b3f32c36c6a4a54-79-127-206-186.serveousercontent.com";
 
-                fetch(`${API_BASE}/api/balance/${user.id}`)
+                fetch(`${API}/api/balance/${user.id}`)
                     .then(r => r.json())
                     .then(data => {
                         if (data.ok) {
-                            document.getElementById('balance').innerHTML = `${data.balance.toFixed(2)}<span class="currency">$</span>`;
-                            document.getElementById('status').innerText = "Синхронизировано";
-                            document.getElementById('status').style.color = "#00ff88";
+                            document.getElementById('bal').innerText = data.balance.toFixed(2) + "$";
+                            document.getElementById('info').innerText = "Данные получены";
                         } else {
-                            document.getElementById('status').innerText = "Ошибка БД";
-                            debug.innerText = "Сервер ответил: " + data.error;
+                            document.getElementById('info').innerText = "Ошибка БД";
                         }
                     })
                     .catch(err => {
-                        document.getElementById('status').innerText = "Нет связи";
-                        debug.innerText = "Проверьте туннель: " + err.message;
+                        document.getElementById('info').innerText = "Нет связи с туннелем";
                     });
             } else {
-                document.getElementById('user-name').innerText = "Доступ ограничен";
-                document.getElementById('status').innerText = "Ошибка входа";
-                debug.innerText = "Используйте кнопку в боте. Data: " + (initData ? "Скрыта" : "Отсутствует");
+                document.getElementById('name').innerText = "Ошибка авторизации";
+                document.getElementById('info').innerText = "Откройте через меню бота";
             }
         }
 
-        // Ждем полной загрузки страницы
-        window.onload = initApp;
+        load();
     </script>
 </body>
 </html>
+
