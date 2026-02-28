@@ -20,49 +20,69 @@
         }
         .container {
             text-align: center;
+            width: 90%;
         }
         .balance-card {
             background: rgba(255, 255, 255, 0.05);
-            padding: 2rem;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
+            padding: 2.5rem 1.5rem;
+            border-radius: 24px;
+            backdrop-filter: blur(15px);
             border: 1px rgba(255, 255, 255, 0.1) solid;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
         }
         h1 {
-            font-size: 1.2rem;
+            font-size: 1rem;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             margin-bottom: 0.5rem;
-            color: #aaa;
+            color: #888;
         }
         .balance-value {
             font-size: 3.5rem;
-            font-weight: bold;
-            margin: 1rem 0;
-            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+            font-weight: 800;
+            margin: 0.5rem 0;
+            background: linear-gradient(to bottom, #fff 30%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         .currency {
             color: #00ff88;
+            -webkit-text-fill-color: #00ff88;
+            font-size: 2rem;
             margin-left: 5px;
         }
         .user-name {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             margin-top: 1rem;
-            opacity: 0.8;
+            color: #00ff88;
+            font-weight: 500;
         }
-        .loading {
-            opacity: 0.5;
-            font-style: italic;
+        .status-tag {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 5px 12px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            background: rgba(255,255,255,0.1);
+            color: #666;
+        }
+        .error-log {
+            margin-top: 1rem;
+            font-size: 0.7rem;
+            color: #ff4444;
+            opacity: 0.7;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="balance-card">
-            <h1>Ваш баланс</h1>
-            <div id="balance" class="balance-value loading">Загрузка...</div>
-            <div id="user-name" class="user-name"></div>
+            <h1>Доступный баланс</h1>
+            <div id="balance" class="balance-value">...</div>
+            <div id="user-name" class="user-name">Загрузка...</div>
+            <div id="status" class="status-tag">Инициализация</div>
+            <div id="debug" class="error-log"></div>
         </div>
     </div>
 
@@ -71,31 +91,40 @@
         webapp.expand();
         webapp.ready();
 
-        // ПОЛУЧАЕМ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ TELEGRAM
         const user = webapp.initDataUnsafe.user;
+        const debug = document.getElementById('debug');
 
         if (user) {
-            document.getElementById('user-name').innerText = user.first_name;
+            document.getElementById('user-name').innerText = user.first_name || "Игрок";
+            document.getElementById('status').innerText = "Поиск сервера...";
             
-            // ЗАМЕНИТЕ ЭТОТ URL НА ВАШ ПУБЛИЧНЫЙ АДРЕС СЕРВЕРА (например через ngrok или IP вашего сервера)
-            const API_BASE = "http://ВАШ_IP_ИЛИ_АДРЕС:8080"; 
+            // ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ ОТ NGROK ИЛИ LOCALTUNNEL (ОБЯЗАТЕЛЬНО HTTPS)
+            const API_BASE = "https://3b3f32c36c6a4a54-79-127-206-186.serveousercontent.com"; 
 
             fetch(`${API_BASE}/api/balance/${user.id}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
+                    return response.json();
+                })
                 .then(data => {
                     if (data.ok) {
                         document.getElementById('balance').innerHTML = `${data.balance.toFixed(2)}<span class="currency">$</span>`;
-                        document.getElementById('balance').classList.remove('loading');
+                        document.getElementById('status').innerText = "Обновлено";
+                        document.getElementById('status').style.color = "#00ff88";
                     } else {
-                        document.getElementById('balance').innerText = "Ошибка";
+                        throw new Error(data.error || "Ошибка данных");
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    document.getElementById('balance').innerText = "Нет связи";
+                    document.getElementById('balance').innerText = "0.00";
+                    document.getElementById('status').innerText = "Оффлайн";
+                    debug.innerText = "Подключите туннель в Termux (порт 8080)";
                 });
         } else {
-            document.getElementById('balance').innerText = "Зайдите через бота";
+            document.getElementById('user-name').innerText = "Доступ запрещен";
+            document.getElementById('balance').innerText = "---";
+            document.getElementById('status').innerText = "Зайдите через бота";
         }
     </script>
 </body>
