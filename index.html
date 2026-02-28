@@ -21,34 +21,82 @@
         .container {
             text-align: center;
         }
+        .balance-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px rgba(255, 255, 255, 0.1) solid;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
         h1 {
-            font-size: 3rem;
-            font-weight: 300;
-            letter-spacing: 0.5rem;
+            font-size: 1.2rem;
             text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            color: #aaa;
+        }
+        .balance-value {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+        .currency {
+            color: #00ff88;
+            margin-left: 5px;
+        }
+        .user-name {
+            font-size: 1.1rem;
+            margin-top: 1rem;
             opacity: 0.8;
-            animation: pulse 3s infinite ease-in-out;
         }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.05); opacity: 0.9; }
-            100% { transform: scale(1); opacity: 0.5; }
-        }
-        .logo {
-            font-size: 5rem;
-            margin-bottom: 1rem;
+        .loading {
+            opacity: 0.5;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">🎰</div>
-        <h1>Скоро</h1>
+        <div class="balance-card">
+            <h1>Ваш баланс</h1>
+            <div id="balance" class="balance-value loading">Загрузка...</div>
+            <div id="user-name" class="user-name"></div>
+        </div>
     </div>
+
     <script>
         const webapp = window.Telegram.WebApp;
         webapp.expand();
         webapp.ready();
+
+        // ПОЛУЧАЕМ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ИЗ TELEGRAM
+        const user = webapp.initDataUnsafe.user;
+
+        if (user) {
+            document.getElementById('user-name').innerText = user.first_name;
+            
+            // ЗАМЕНИТЕ ЭТОТ URL НА ВАШ ПУБЛИЧНЫЙ АДРЕС СЕРВЕРА (например через ngrok или IP вашего сервера)
+            const API_BASE = "http://ВАШ_IP_ИЛИ_АДРЕС:8080"; 
+
+            fetch(`${API_BASE}/api/balance/${user.id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ok) {
+                        document.getElementById('balance').innerHTML = `${data.balance.toFixed(2)}<span class="currency">$</span>`;
+                        document.getElementById('balance').classList.remove('loading');
+                    } else {
+                        document.getElementById('balance').innerText = "Ошибка";
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('balance').innerText = "Нет связи";
+                });
+        } else {
+            document.getElementById('balance').innerText = "Зайдите через бота";
+        }
     </script>
 </body>
 </html>
