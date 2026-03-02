@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="config.js"></script>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; text-align: center; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
         .card { padding: 40px; border: 1px solid #333; border-radius: 20px; }
@@ -21,37 +22,49 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
 
-        function load() {
+        function load(retryCount = 0) {
+            tg.ready();
+            tg.expand();
+
             const user = tg.initDataUnsafe?.user;
-            if (user && user.id) {
-                document.getElementById('name').innerText = user.first_name;
-                
-                // ВАША ССЫЛКА НА ТУННЕЛЬ
-                const API = "https://submit-commodity-latinas-harrison.trycloudflare.com";
 
-                fetch(`${API}/api/balance/${user.id}`)
+            if (user && user.id) {
+                document.getElementById('name').innerText = user.first_name || "Игрок";
+                document.getElementById('info').innerText = "Связь установлена. Загрузка...";
+
+                fetch(`${CONFIG.API_URL}/api/balance/${user.id}`, {
+                    headers: {
+                        'Authorization': tg.initData
+                    }
+                })
                     .then(r => r.json())
                     .then(data => {
                         if (data.ok) {
                             document.getElementById('bal').innerText = data.balance.toFixed(2) + "$";
-                            document.getElementById('info').innerText = "Данные получены";
+                            document.getElementById('info').innerText = "Данные синхронизированы";
                         } else {
-                            document.getElementById('info').innerText = "Ошибка БД";
+                            document.getElementById('info').innerText = "Ошибка API: " + data.error;
                         }
                     })
                     .catch(err => {
-                        document.getElementById('info').innerText = "Нет связи с туннелем";
+                        document.getElementById('info').innerText = "Сервер бота недоступен. Обновите ссылку API!";
                     });
+            } else if (retryCount < 5) {
+                // Если данных нет, пробуем еще раз через 500мс (всего 5 попыток)
+                document.getElementById('info').innerText = "Инициализация... (" + (retryCount + 1) + ")";
+                setTimeout(() => load(retryCount + 1), 500);
             } else {
                 document.getElementById('name').innerText = "Ошибка авторизации";
-                document.getElementById('info').innerText = "Откройте через меню бота";
+                document.getElementById('bal').innerText = "---";
+                document.getElementById('info').innerHTML = 
+                    "Telegram не передал данные.<br>" +
+                    "Попробуйте <b>закрыть и открыть снова</b> или <b>выключить VPN</b>.";
             }
         }
 
-        load();
+        // Запуск через небольшую паузу
+        setTimeout(() => load(), 300);
     </script>
 </body>
 </html>
